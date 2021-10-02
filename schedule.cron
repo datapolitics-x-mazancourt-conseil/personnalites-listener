@@ -1,0 +1,2 @@
+0 2 * * *  cd /datapolitics/app/ && /datapolitics/app/build_charts.sh >> /var/log/cron.log 2>&1
+# remember to end this file with an empty new line

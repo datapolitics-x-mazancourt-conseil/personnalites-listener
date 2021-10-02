@@ -1,0 +1,15 @@
+version: '3'
+
+services:
+
+  dev-analytics:
+      image: antoinebacalu/sample-analytics-app
+      container_name: dev-analytics
+      restart: always
+      networks:
+        - datapolitics-platform_datapolitics-net
+      command: tail -f /dev/null # keeps it running
+
+networks:
+  datapolitics-platform_datapolitics-net:
+     external: true
