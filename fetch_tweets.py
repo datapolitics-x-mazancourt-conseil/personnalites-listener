@@ -54,12 +54,12 @@ with urllib.request.urlopen(url_candidats) as f:
 
     # on parcoure l'ensemble des candidats
     for c in candidats:
-        logging.info("Requesting data for twitter account : " , c["twitter"])
+        logging.info("Requesting data for twitter account : {}".format(c["twitter"]))
 
         # on attend 1 secondes pour s'assurer de rester en dessus du rate limite (de 2 requêtes par seconde)
         time.sleep(1)
 
-        query_string = '(from:{candidat_username}) OR #twitterdev'.format(candidat_username = test_username)
+        query_string = '(from:{candidat_username}) OR #twitterdev'.format(candidat_username = c["twitter"])
         query_params = {'query': query_string,'tweet.fields': 'attachments,author_id,context_annotations,conversation_id,created_at,entities,geo,id,in_reply_to_user_id,lang,possibly_sensitive,public_metrics,referenced_tweets,reply_settings,source,text,withheld'}
 
         # pour chaque candidat, on fait la requête à l'API Twitter
@@ -74,8 +74,8 @@ with urllib.request.urlopen(url_candidats) as f:
                     keys[1]:item["author_id"],
                     keys[2]:item["conversation_id"],
                     keys[3]:item["created_at"],
-                    keys[4]:[hashtag["tag"] for hashtag in item["entities"]["hashtags"]] if "hashtags" in item["entities"] else None,
-                    keys[5]:[mention["username"] for mention in item["entities"]["mentions"]] if "mentions" in item["entities"] else None,
+                    keys[4]:[hashtag["tag"] for hashtag in item["entities"]["hashtags"]] if ("entities" in item and "hashtags" in item["entities"]) else None,
+                    keys[5]:[mention["username"] for mention in item["entities"]["mentions"]] if ("entities" in item and "mentions" in item["entities"]) else None,
                     keys[6] : item["public_metrics"]["like_count"],
                     keys[7] : item["public_metrics"]["quote_count"],
                     keys[8] : item["public_metrics"]["reply_count"],
