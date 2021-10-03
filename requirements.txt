@@ -1,17 +1,5 @@
-numpy==1.19.4
-pandas==1.1.5
-plotly==4.14.0
-xlrd==2.0.1
-openpyxl==3.0.7
 requests==2.25.1
 urllib3==1.26.4
-scrapy==2.5.0
-python-dateutil==2.8.1
-matplotlib==3.4.2
 ipykernel
-SQLAlchemy
-psycopg2-binary
-beautifulsoup4
-scikit-learn==0.24.2
 dateparser==1.0.0
 python-dotenv==0.19.0

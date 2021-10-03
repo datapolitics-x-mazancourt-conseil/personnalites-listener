@@ -17,3 +17,4 @@ Ce projet récupère l'ensemble des tweets postés par les candidats à la prés
 
 - Python 3.7+
 - Docker et un compte hub.docker.com (si vous souhaitez utiliser Docker)
+- Un fichier .env à la racine du projet avec la variable d'environnement BEARER_TOKEN (à récupérer depuis console twitter developers)
