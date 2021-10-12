@@ -80,7 +80,7 @@ with urllib.request.urlopen(url_candidats) as f:
         # date must be YYYY-MM-DDTHH:mm:ssZ (ISO 8601/RFC 3339)
 
         start_time = (datetime.now(timezone.utc) - timedelta(hours=1, minutes=5)).isoformat()
-        query_params = {'query': query_string,'start_time':start_time,'tweet.fields': 'attachments,author_id,context_annotations,conversation_id,created_at,entities,geo,id,in_reply_to_user_id,lang,possibly_sensitive,public_metrics,referenced_tweets,reply_settings,source,text,withheld'}
+        query_params = {'query': query_string,'start_time':start_time, 'max_results':100,'tweet.fields': 'attachments,author_id,context_annotations,conversation_id,created_at,entities,geo,id,in_reply_to_user_id,lang,possibly_sensitive,public_metrics,referenced_tweets,reply_settings,source,text,withheld'}
         # pour chaque candidat, on fait la requête à l'API Twitter
         json_response = connect_to_endpoint(url_twitter, query_params)
 
