@@ -18,7 +18,5 @@ RUN pip3 install -r requirements.txt
 COPY . .
 
 # lance la génération des analyses
-RUN chmod +x build_charts.sh
-CMD ["cron", "-f"]
-
-
+RUN chmod +x exec.sh
+CMD ["sh", "start.sh"]
