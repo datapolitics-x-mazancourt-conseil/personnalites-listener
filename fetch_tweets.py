@@ -47,6 +47,9 @@ def connect_to_endpoint(url, params):
 #%%
 # Téléchargement
 
+logging.info("Début d'éxecution")
+
+
 url_candidats = "https://raw.githubusercontent.com/datapolitics/sondages-presidentielles/main/candidats2022.json"
 bearer_token = os.environ.get("BEARER_TOKEN")
 url_twitter = "https://api.twitter.com/2/tweets/search/recent"
@@ -58,11 +61,12 @@ keys = [
     "retweet","reply","quote","reply_settings", "source","text"
 ]
 
+counter = 0
+
 with urllib.request.urlopen(url_candidats) as f:
     
     candidats = eval(f.read().decode("utf-8"))
     data = []
-
     # on parcoure l'ensemble des candidats
     for c in candidats[0:1]:
         logging.info("Requesting data for twitter account : {}".format(c["twitter"]))
@@ -104,7 +108,10 @@ with urllib.request.urlopen(url_candidats) as f:
                 current_tweet.full_text = item["text"]
 
                 current_tweet.save()
+
+                counter = counter + 1
         else:
             logging.info("Aucun tweet pour la personne d'intérêt {}".format(c["twitter"]))
     
+logging.info("Exécution terminée, {} tweets traités".format(counter))
 
