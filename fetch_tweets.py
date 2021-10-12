@@ -1,5 +1,6 @@
 #%%
 # Imports
+from datetime import datetime, timedelta, timezone
 import urllib.request
 import requests
 import os
@@ -7,17 +8,27 @@ import json
 import logging
 import csv
 import time
+from tweet import Tweet
 
 from dotenv import load_dotenv
 load_dotenv()  # take environment variables from .env.
 
 logging.basicConfig(
     filename='logs.log', 
-    encoding='utf-8', 
     level=logging.INFO,
     format='%(asctime)s %(message)s',
     datefmt='%m/%d/%Y %I:%M:%S %p'
 )
+
+# connection to elastic search
+from elasticsearch_dsl import connections
+
+connection_string = "{url}:{port}".format(
+    url=os.environ.get("ELASTIC_URL"), 
+    port = os.environ.get("ELASTIC_PORT")
+)
+
+connections.create_connection(hosts=[connection_string],http_auth=(os.environ.get("ELASTIC_USERNAME"),os.environ.get("ELASTIC_PWD")))
 
 #%%
 # Fonctions utiles
@@ -53,46 +64,47 @@ with urllib.request.urlopen(url_candidats) as f:
     data = []
 
     # on parcoure l'ensemble des candidats
-    for c in candidats:
+    for c in candidats[0:1]:
         logging.info("Requesting data for twitter account : {}".format(c["twitter"]))
 
         # on attend 1 secondes pour s'assurer de rester en dessus du rate limite (de 2 requêtes par seconde)
         time.sleep(1)
 
-        query_string = '(from:{candidat_username}) OR #twitterdev'.format(candidat_username = c["twitter"])
-        query_params = {'query': query_string,'tweet.fields': 'attachments,author_id,context_annotations,conversation_id,created_at,entities,geo,id,in_reply_to_user_id,lang,possibly_sensitive,public_metrics,referenced_tweets,reply_settings,source,text,withheld'}
+        query_string = '(from:{candidat_username})'.format(candidat_username = c["twitter"])
 
+        # on recherche les tweets des dernières 1h05 (soit 1h + petite sécurité)
+        # date must be YYYY-MM-DDTHH:mm:ssZ (ISO 8601/RFC 3339)
+
+        start_time = (datetime.now(timezone.utc) - timedelta(hours=1, minutes=5)).isoformat()
+        query_params = {'query': query_string,'start_time':start_time,'tweet.fields': 'attachments,author_id,context_annotations,conversation_id,created_at,entities,geo,id,in_reply_to_user_id,lang,possibly_sensitive,public_metrics,referenced_tweets,reply_settings,source,text,withheld'}
         # pour chaque candidat, on fait la requête à l'API Twitter
         json_response = connect_to_endpoint(url_twitter, query_params)
-        print(json.dumps(json_response, indent=4, sort_keys=True))
 
         # on mape les données pour sortir un format à plat
-        for item in json_response["data"]:
-            data.append(
-                {
-                    keys[0]:c["twitter"],
-                    keys[1]:item["author_id"],
-                    keys[2]:item["conversation_id"],
-                    keys[3]:item["created_at"],
-                    keys[4]:[hashtag["tag"] for hashtag in item["entities"]["hashtags"]] if ("entities" in item and "hashtags" in item["entities"]) else None,
-                    keys[5]:[mention["username"] for mention in item["entities"]["mentions"]] if ("entities" in item and "mentions" in item["entities"]) else None,
-                    keys[6] : item["public_metrics"]["like_count"],
-                    keys[7] : item["public_metrics"]["quote_count"],
-                    keys[8] : item["public_metrics"]["reply_count"],
-                    keys[9] : item["public_metrics"]["retweet_count"],
-                    keys[10] : (True if any(ref_tweet["type"]=="retweeted" for ref_tweet in item["referenced_tweets"]) else False) if 'referenced_tweets' in item else False,
-                    keys[11] : (True if any(ref_tweet["type"]=="replied" for ref_tweet in item["referenced_tweets"]) else False) if 'referenced_tweets' in item else False,
-                    keys[12] : (True if any(ref_tweet["type"]=="quoted" for ref_tweet in item["referenced_tweets"]) else False) if 'referenced_tweets' in item else False,
-                    keys[13]: item["reply_settings"],
-                    keys[14]: item["source"],
-                    keys[15]: item["text"]
-                }
-            )
+        if('data' in json_response):
+            for item in json_response["data"]:
 
+                current_tweet = Tweet()
+                current_tweet.id = item["id"]
+                current_tweet.username = c["twitter"]
+                current_tweet.author_id = item["author_id"]
+                current_tweet.conversation_id = item["conversation_id"]
+                current_tweet.published = item["created_at"]
+                current_tweet.hashtags = [hashtag["tag"] for hashtag in item["entities"]["hashtags"]] if ("entities" in item and "hashtags" in item["entities"]) else None
+                current_tweet.mentions = [mention["username"] for mention in item["entities"]["mentions"]] if ("entities" in item and "mentions" in item["entities"]) else None
+                current_tweet.like_count = item["public_metrics"]["like_count"]
+                current_tweet.quote_count = item["public_metrics"]["quote_count"]
+                current_tweet.reply_count = item["public_metrics"]["reply_count"]
+                current_tweet.retweet_count = item["public_metrics"]["retweet_count"]
+                current_tweet.retweet = (True if any(ref_tweet["type"]=="retweeted" for ref_tweet in item["referenced_tweets"]) else False) if 'referenced_tweets' in item else False
+                current_tweet.reply = (True if any(ref_tweet["type"]=="replied" for ref_tweet in item["referenced_tweets"]) else False) if 'referenced_tweets' in item else False
+                current_tweet.quote = (True if any(ref_tweet["type"]=="quoted" for ref_tweet in item["referenced_tweets"]) else False) if 'referenced_tweets' in item else False
+                current_tweet.reply_settings = item["reply_settings"]
+                current_tweet.source = item["source"]
+                current_tweet.full_text = item["text"]
 
-with open(output_file,"w+") as f:
-    writer = csv.DictWriter(f, fieldnames=keys)
-    writer.writeheader()
-    [writer.writerow(row) for row in data]
-        
+                current_tweet.save()
+        else:
+            logging.info("Aucun tweet pour la personne d'intérêt {}".format(c["twitter"]))
+    
 
