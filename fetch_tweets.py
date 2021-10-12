@@ -68,7 +68,7 @@ with urllib.request.urlopen(url_candidats) as f:
     candidats = eval(f.read().decode("utf-8"))
     data = []
     # on parcoure l'ensemble des candidats
-    for c in candidats[0:1]:
+    for c in candidats:
         logging.info("Requesting data for twitter account : {}".format(c["twitter"]))
 
         # on attend 1 secondes pour s'assurer de rester en dessus du rate limite (de 2 requêtes par seconde)
