@@ -21,7 +21,7 @@ class Tweet(Document):
     full_text = Text()
 
     class Index:
-        name = 'tweet'
+        name = 'tweet-personnalites'
         settings = {
           "number_of_shards": 2,
         }
